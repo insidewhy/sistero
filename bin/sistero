@@ -1,0 +1,36 @@
+#!/usr/bin/env ruby
+
+require 'bundler/setup'
+require 'sistero'
+require 'optparse/subcommand'
+
+config = OpenStruct.new
+
+opt_parser = OptionParser.new do |op|
+  op.banner = "usage: sistero [options]"
+
+  op.subcommand 'ssh' do |ssh|
+    config.action = :ssh
+    ssh.on '-o val' do |ssh_options|
+      config.ssh_options = ssh_options
+    end
+  end
+
+  op.on '-h', '--help' do
+    puts op
+    exit
+  end
+
+  op.parse!
+end
+
+unless config.action
+  puts 'please supply a command, see --help'
+  exit
+end
+
+sistero = Sistero::Instance.new
+case config.action
+when :ssh
+  sistero.ssh_to_vm(ssh_options: config.ssh_options)
+end
