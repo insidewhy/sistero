@@ -4,70 +4,74 @@ require 'bundler/setup'
 require 'sistero'
 require 'optparse/subcommand'
 
-config = OpenStruct.new
+module Sistero::Command
+  @config = OpenStruct.new
+  @subcommands = []
+  @op = nil
 
-opt_parser = OptionParser.new do |op|
-  def with_help help_op
+  def self.subcommand name, banner
+    @subcommands.push({ name: name, banner: banner })
+    @op.subcommand name do |subop|
+      @config.action = name
+      subop.banner = banner
+      with_help subop
+      yield subop if block_given?
+    end
+  end
+
+  def self.with_help help_op
     help_op.on '-h', '--help', 'show this help message' do
       puts help_op
       exit
     end
   end
 
-  @subcommands = []
+  def self.run
+    OptionParser.new do |op|
+      @op = op
 
-  def subcommand op, name, banner, &block
-    @subcommands.push({ name: name, banner: banner })
-    op.subcommand name do |subop|
-      subop.banner = banner
-      with_help subop
-      block.call subop
+      op.banner = 'usage: sistero [global options] command [command options]'
+      op.on '-h', '--help', 'show this help message' do
+        max_len = @subcommands.map { |subcommand| subcommand[:name].length }.max
+
+        puts op
+        puts "\ncommands:"
+        @subcommands.each do |subcommand|
+          prefix = subcommand[:name]
+          prefix += ' ' * (max_len - prefix.length + 2)
+          puts "    #{prefix}  #{subcommand[:banner]}"
+        end
+        exit
+      end
+
+      subcommand 'ssh', 'ssh to vm' do |subop|
+        subop.on '-o val', 'add ssh options' do |ssh_options|
+          @config.ssh_options = ssh_options
+        end
+      end
+
+      subcommand 'create', 'create vm'
+
+      subcommand 'destroy', 'destroy vm'
+
+      op.parse!
+    end
+
+    unless @config.action
+      puts 'please supply a command, see --help'
+      exit
+    end
+
+    sistero = Sistero::Instance.new
+    case @config.action
+    when 'ssh'
+      sistero.ssh_to_vm(ssh_options: @config.ssh_options)
+    when 'create'
+      sistero.create_vm()
+    when 'destroy'
+      sistero.destroy_vm()
     end
   end
-
-  op.banner = 'usage: sistero [global options] command [command options]'
-  op.on '-h', '--help', 'show this help message' do
-    max_len = @subcommands.map { |subcommand| subcommand[:name].length }.max
-
-    puts op
-    puts "\ncommands:"
-    @subcommands.each do |subcommand|
-      prefix = subcommand[:name]
-      prefix += ' ' * (max_len - prefix.length + 2)
-      puts "    #{prefix}  #{subcommand[:banner]}"
-    end
-    exit
-  end
-
-  subcommand op, 'ssh', 'ssh to vm' do |subop|
-    config.action = :ssh
-    subop.on '-o val', 'add ssh options' do |ssh_options|
-      config.ssh_options = ssh_options
-    end
-  end
-
-  subcommand op, 'create', 'create vm' do |subop|
-    config.action = :create
-  end
-
-  subcommand op, 'destroy', 'destroy vm' do |subop|
-    config.action = :destroy
-  end
-
-  op.parse!
 end
 
-unless config.action
-  puts 'please supply a command, see --help'
-  exit
-end
-
-sistero = Sistero::Instance.new
-case config.action
-when :ssh
-  sistero.ssh_to_vm(ssh_options: config.ssh_options)
-when :create
-  sistero.create_vm()
-when :destroy
-  sistero.destroy_vm()
-end
+Sistero::Command::run
