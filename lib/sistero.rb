@@ -1,5 +1,3 @@
-require "xdg"
-
 require "sistero/version"
 require "yaml"
 require "droplet_kit"
@@ -10,7 +8,7 @@ module Sistero
   class Config
     DEFAULTS = {
       :access_token => nil,
-      :ssh_key => nil,
+      :ssh_keys => [],
       :vm_name => nil,
       :vm_size => 512,
       :vm_region => 'nyc3',
@@ -42,9 +40,8 @@ module Sistero
           val = gets.strip
         end
         file_opts[key] = val
-
-        write_yaml(cfg_file_path, file_opts) if dirty
       end
+      write_yaml(cfg_file_path, file_opts) if dirty
 
       file_opts.merge! opts
       file_opts.each { |k, v| send("#{k}=", v) }
@@ -57,33 +54,39 @@ module Sistero
       @client = DropletKit::Client.new(access_token: @config.access_token)
     end
 
-    def find_vm(vm_name: @config.vm_name, create: false)
-      vm = @client.droplets.all.find do |vm|
-        vm.name == vm_name
-      end
+    def find_vm(vm_name: @config.vm_name)
+      @client.droplets.all.find { |vm| vm.name == vm_name }
+    end
 
-      if vm
-        puts "found vm: #{vm_name}"
-      elsif create
-        puts "creating vm: #{vm_name}"
-        vm = DropletKit::Droplet.new(
-          name: vm_name, region: @config.vm_region, size: "#{@config.vm_size}mb", image: @config.vm_image
-        )
-        vm = @client.droplets.create(vm)
-        puts "created vm: #{vm_name}"
-      end
+    def create_vm(vm_name: @config.vm_name)
+      puts "creating vm: #{vm_name}"
+      vm = DropletKit::Droplet.new(
+        name: vm_name, region: @config.vm_region, size: "#{@config.vm_size}mb", image: @config.vm_image, ssh_keys: @config.ssh_keys
+      )
+      vm = @client.droplets.create(vm)
+      puts "created vm: #{vm_name}"
       vm
     end
 
     def ssh_to_vm(vm_name: @config.vm_name, ssh_options: "")
-      vm = find_vm(vm_name: vm_name, create: true)
+      vm = find_vm(vm_name: vm_name) or create_vm(vm_name: vm_name)
       public_network = vm.networks.v4.find { |network| network.type == 'public' }
       if not public_network
         puts "no public interfaces"
         return
       end
       ip = public_network.ip_address
-      puts "TODO: ssh to #{ip} (options: #{ssh_options})"
+      exec "ssh #{ssh_options} root@#{ip}"
+    end
+
+    def destroy_vm(vm_name: @config.vm_name)
+      vm = find_vm(vm_name: vm_name)
+      if vm
+        puts "destroying #{vm.id}"
+        @client.droplets.delete(id: vm.id)
+      else
+        puts "vm not found"
+      end
     end
   end
 end

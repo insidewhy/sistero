@@ -7,13 +7,22 @@ require 'optparse/subcommand'
 config = OpenStruct.new
 
 opt_parser = OptionParser.new do |op|
-  op.banner = "usage: sistero [options]"
+  op.banner = 'usage: sistero [options]'
 
   op.subcommand 'ssh' do |ssh|
+    ssh.banner = 'ssh to vm'
     config.action = :ssh
     ssh.on '-o val' do |ssh_options|
       config.ssh_options = ssh_options
     end
+  end
+
+  op.subcommand 'create' do |create|
+    config.action = :create
+  end
+
+  op.subcommand 'destroy' do |destroy|
+    config.action = :destroy
   end
 
   op.on '-h', '--help' do
@@ -33,4 +42,8 @@ sistero = Sistero::Instance.new
 case config.action
 when :ssh
   sistero.ssh_to_vm(ssh_options: config.ssh_options)
+when :create
+  sistero.create_vm()
+when :destroy
+  sistero.destroy_vm()
 end
