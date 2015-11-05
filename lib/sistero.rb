@@ -76,6 +76,8 @@ module Sistero
         return
       end
       ip = public_network.ip_address
+
+      # TODO: wait for ssh port to be open
       exec "ssh #{ssh_options} root@#{ip}"
     end
 

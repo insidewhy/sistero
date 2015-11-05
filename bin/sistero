@@ -7,27 +7,51 @@ require 'optparse/subcommand'
 config = OpenStruct.new
 
 opt_parser = OptionParser.new do |op|
-  op.banner = 'usage: sistero [options]'
+  def with_help help_op
+    help_op.on '-h', '--help', 'show this help message' do
+      puts help_op
+      exit
+    end
+  end
 
-  op.subcommand 'ssh' do |ssh|
-    ssh.banner = 'ssh to vm'
+  @subcommands = []
+
+  def subcommand op, name, banner, &block
+    @subcommands.push({ name: name, banner: banner })
+    op.subcommand name do |subop|
+      subop.banner = banner
+      with_help subop
+      block.call subop
+    end
+  end
+
+  op.banner = 'usage: sistero [global options] command [command options]'
+  op.on '-h', '--help', 'show this help message' do
+    max_len = @subcommands.map { |subcommand| subcommand[:name].length }.max
+
+    puts op
+    puts "\ncommands:"
+    @subcommands.each do |subcommand|
+      prefix = subcommand[:name]
+      prefix += ' ' * (max_len - prefix.length + 2)
+      puts "    #{prefix}  #{subcommand[:banner]}"
+    end
+    exit
+  end
+
+  subcommand op, 'ssh', 'ssh to vm' do |subop|
     config.action = :ssh
-    ssh.on '-o val' do |ssh_options|
+    subop.on '-o val', 'add ssh options' do |ssh_options|
       config.ssh_options = ssh_options
     end
   end
 
-  op.subcommand 'create' do |create|
+  subcommand op, 'create', 'create vm' do |subop|
     config.action = :create
   end
 
-  op.subcommand 'destroy' do |destroy|
+  subcommand op, 'destroy', 'destroy vm' do |subop|
     config.action = :destroy
-  end
-
-  op.on '-h', '--help' do
-    puts op
-    exit
   end
 
   op.parse!
