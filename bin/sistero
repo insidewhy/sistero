@@ -54,6 +54,8 @@ module Sistero::Command
 
       subcommand 'destroy', 'destroy vm'
 
+      subcommand 'list', 'list vms'
+
       op.parse!
     end
 
@@ -70,6 +72,8 @@ module Sistero::Command
       sistero.create_vm()
     when 'destroy'
       sistero.destroy_vm()
+    when 'list'
+      sistero.list_vms()
     end
   end
 end

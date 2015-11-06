@@ -58,6 +58,12 @@ module Sistero
       @client.droplets.all.find { |vm| vm.name == vm_name }
     end
 
+    def list_vms()
+      @client.droplets.all.each do |vm|
+        puts "#{vm.name} - #{vm.networks[0][0].ip_address}"
+      end
+    end
+
     def create_vm(vm_name: @config.vm_name)
       puts "creating vm: #{vm_name}"
       vm = DropletKit::Droplet.new(
