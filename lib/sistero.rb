@@ -9,6 +9,7 @@ module Sistero
     DEFAULTS = {
       :access_token => nil,
       :ssh_keys => [],
+      :ssh_options => '',
       :vm_name => nil,
       :vm_size => 512,
       :vm_region => 'nyc3',
@@ -74,17 +75,22 @@ module Sistero
       vm
     end
 
-    def ssh_to_vm(vm_name: @config.vm_name, ssh_options: "")
-      vm = find_vm(vm_name: vm_name) or create_vm(vm_name: vm_name)
+    def ssh_to_vm(vm_name: @config.vm_name, ssh_options: @config.ssh_options)
+      ssh_options = @config.ssh_options if ssh_options == nil
+      vm = find_vm(vm_name: vm_name) || create_vm(vm_name: vm_name)
       public_network = vm.networks.v4.find { |network| network.type == 'public' }
-      if not public_network
-        puts "no public interfaces"
-        return
+      until public_network
+        puts "no public interfaces, trying again in a second"
+        sleep 1
+        vm = find_vm(vm_name: vm_name)
+        public_network = vm.networks.v4.find { |network| network.type == 'public' }
       end
       ip = public_network.ip_address
 
       # TODO: wait for ssh port to be open
-      exec "ssh #{ssh_options} root@#{ip}"
+      cmd = "ssh #{ssh_options} root@#{ip}"
+      puts cmd
+      exec cmd
     end
 
     def destroy_vm(vm_name: @config.vm_name)
