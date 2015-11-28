@@ -75,6 +75,22 @@ module Sistero
       vm
     end
 
+    def is_port_open?(ip, port)
+      begin
+        Timeout::timeout(1) do
+          begin
+            s = TCPSocket.new(ip, port)
+            s.close
+            return true
+          rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH
+            return false
+          end
+        end
+      rescue Timeout::Error ; end
+
+      return false
+    end
+
     def ssh_to_vm(vm_name: @config.vm_name, ssh_options: @config.ssh_options)
       ssh_options = @config.ssh_options if ssh_options == nil
       vm = find_vm(vm_name: vm_name) || create_vm(vm_name: vm_name)
@@ -87,8 +103,16 @@ module Sistero
       end
       ip = public_network.ip_address
 
+      unless is_port_open? ip, 22
+        puts "waiting for ssh port to open"
+        sleep 1
+        until is_port_open? ip, 22 do
+          sleep 1
+        end
+      end
+
       # TODO: wait for ssh port to be open
-      cmd = "ssh #{ssh_options} root@#{ip}"
+      cmd = "ssh -o 'StrictHostKeyChecking no' #{ssh_options} root@#{ip}"
       puts cmd
       exec cmd
     end
