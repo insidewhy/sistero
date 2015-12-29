@@ -9,8 +9,8 @@ Gem::Specification.new do |spec|
   spec.authors       = ["James Pike"]
   spec.email         = ["github@chilon.net"]
 
-  spec.summary       = %q{DigitalOcean developer tools.}
-  spec.description   = %q{Commands for dealing with temporary digital ocean VMs.}
+  spec.summary       = %q{Profile based digital ocean cluster management command line tool.}
+  spec.description   = %q{Profile based digital ocean cluster management command line tool.}
   spec.homepage      = "http://github.com/ohjames/sistero"
 
   # Prevent pushing this gem to RubyGems.org by setting 'allowed_push_host', or

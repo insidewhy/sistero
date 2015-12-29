@@ -6,6 +6,8 @@ require 'optparse/subcommand'
 
 module Sistero::Command
   @config = OpenStruct.new
+  @config.profile_name = 'default'
+
   @subcommands = []
   @op = nil
 
@@ -44,6 +46,10 @@ module Sistero::Command
         exit
       end
 
+      op.on '-p val', '--profile', 'set profile' do |profile_name|
+        @config.profile_name = profile_name
+      end
+
       subcommand 'ssh', 'ssh to vm' do |subop|
         subop.on '-o val', 'add ssh options' do |ssh_options|
           @config.ssh_options = ssh_options
@@ -67,11 +73,11 @@ module Sistero::Command
     sistero = Sistero::Instance.new
     case @config.action
     when 'ssh'
-      sistero.ssh_to_vm(ssh_options: @config.ssh_options)
+      sistero.ssh_to_vm(@config.profile_name, ssh_options: @config.ssh_options)
     when 'create'
-      sistero.create_vm()
+      sistero.create_vm(@config.profile_name)
     when 'destroy'
-      sistero.destroy_vm()
+      sistero.destroy_vm(@config.profile_name)
     when 'list'
       sistero.list_vms()
     end

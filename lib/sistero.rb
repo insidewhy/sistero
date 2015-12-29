@@ -5,57 +5,52 @@ require "droplet_kit"
 APP_NAME = "sistero"
 
 module Sistero
+  Profile = Struct.new(:access_token, :ssh_keys, :ssh_options, :vm_name, :vm_size, :vm_region, :vm_image)
+  # DEFAULTS = {
+  #   :access_token => nil,
+  #   :ssh_keys => [],
+  #   :ssh_options => '',
+  #   :vm_name => nil,
+  #   :vm_size => 512,
+  #   :vm_region => 'nyc3',
+  #   :vm_image => 'ubuntu-14-04-x64',
+  # }
+
   class Config
-    DEFAULTS = {
-      :access_token => nil,
-      :ssh_keys => [],
-      :ssh_options => '',
-      :vm_name => nil,
-      :vm_size => 512,
-      :vm_region => 'nyc3',
-      :vm_image => 'ubuntu-14-04-x64',
-    }
+    attr_accessor :defaults
 
-    attr_accessor *DEFAULTS.keys
-
-    def write_yaml(path, opts)
-      File.open(path, 'w') { |f| f.write opts.to_yaml }
+    def profile name
+      @profiles[name] || @defaults
     end
 
     def initialize(opts = {})
       # read defaults from config file
       cfg_file_path = "#{ENV['HOME']}/.config/#{APP_NAME}"
-      file_opts = {}
-      file_opts = YAML.load_file cfg_file_path if File.exists? cfg_file_path
+      @defaults = Profile.new
+      @profiles = {}
 
-      dirty = false
-      DEFAULTS.each do |key, default|
-        next if file_opts[key]
-        dirty = true
-        if default
-          print "#{key} [#{default}] = "
-          val = gets.strip
-          val = default if val == ''
-        else
-          print "#{key} = "
-          val = gets.strip
-        end
-        file_opts[key] = val
+      cfg = YAML.load_file cfg_file_path
+      cfg['defaults'].each do |key, value|
+        @defaults[key] = value
       end
-      write_yaml(cfg_file_path, file_opts) if dirty
 
-      file_opts.merge! opts
-      file_opts.each { |k, v| send("#{k}=", v) }
+      cfg.each do |name, profile_cfg|
+        next if name == 'defaults'
+        profile = @profiles[name] = Profile.new *@defaults
+        profile_cfg.each do |key, value|
+          profile[key] = value
+        end
+      end
     end
   end
 
   class Instance
     def initialize(opts = {})
       @config = Config.new(opts)
-      @client = DropletKit::Client.new(access_token: @config.access_token)
+      @client = DropletKit::Client.new(access_token: @config.defaults.access_token)
     end
 
-    def find_vm(vm_name: @config.vm_name)
+    def find_vm(vm_name:)
       @client.droplets.all.find { |vm| vm.name == vm_name }
     end
 
@@ -65,13 +60,21 @@ module Sistero
       end
     end
 
-    def create_vm(vm_name: @config.vm_name)
+    def create_vm(profile_name, vm_name: nil)
+      profile = @config.profile profile_name
+      vm_name ||= profile.vm_name
+
       puts "creating vm: #{vm_name}"
+
       vm = DropletKit::Droplet.new(
-        name: vm_name, region: @config.vm_region, size: "#{@config.vm_size}mb", image: @config.vm_image, ssh_keys: @config.ssh_keys
+        name: vm_name,
+        region: profile.vm_region,
+        size: "#{profile.vm_size}mb",
+        image: profile.vm_image,
+        ssh_keys: profile.ssh_keys
       )
       vm = @client.droplets.create(vm)
-      puts "created vm: #{vm_name}"
+      puts "created vm: #{profile.to_s}"
       vm
     end
 
@@ -91,9 +94,12 @@ module Sistero
       return false
     end
 
-    def ssh_to_vm(vm_name: @config.vm_name, ssh_options: @config.ssh_options)
-      ssh_options = @config.ssh_options if ssh_options == nil
-      vm = find_vm(vm_name: vm_name) || create_vm(vm_name: vm_name)
+    def ssh_to_vm(profile_name, vm_name: nil, ssh_options: nil)
+      profile = @config.profile profile_name
+      vm_name ||= profile.vm_name
+      ssh_options ||= profile.ssh_options
+
+      vm = find_vm(vm_name: vm_name) || create_vm(profile_name, vm_name: vm_name)
       public_network = vm.networks.v4.find { |network| network.type == 'public' }
       until public_network
         puts "no public interfaces, trying again in a second"
@@ -111,19 +117,21 @@ module Sistero
         end
       end
 
-      # TODO: wait for ssh port to be open
       cmd = "ssh -o 'StrictHostKeyChecking no' #{ssh_options} root@#{ip}"
       puts cmd
       exec cmd
     end
 
-    def destroy_vm(vm_name: @config.vm_name)
+    def destroy_vm(profile_name, vm_name: nil)
+      profile = @config.profile profile_name
+      vm_name ||= profile.vm_name
+
       vm = find_vm(vm_name: vm_name)
       if vm
         puts "destroying #{vm.id}"
         @client.droplets.delete(id: vm.id)
       else
-        puts "vm not found"
+        puts "vm #{vm_name} not found"
       end
     end
   end
