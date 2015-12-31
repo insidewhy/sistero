@@ -69,7 +69,7 @@ module Sistero
       vm = DropletKit::Droplet.new(
         name: vm_name,
         region: profile.vm_region,
-        size: "#{profile.vm_size}mb",
+        size: profile.vm_size,
         image: profile.vm_image,
         ssh_keys: profile.ssh_keys
       )
