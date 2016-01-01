@@ -46,8 +46,8 @@ module Sistero::Command
         exit
       end
 
-      op.on '-p val', '--profile', 'set profile' do |profile_name|
-        @config.profile_name = profile_name
+      op.on '-n vm-name', '--name', 'set vm name' do |vm_name|
+        @config.vm_name = vm_name
       end
 
       subcommand 'ssh', 'ssh to vm' do |subop|
@@ -72,18 +72,24 @@ module Sistero::Command
       exit
     end
 
-    sistero = Sistero::Instance.new
-    case @config.action
-    when 'ssh'
-      sistero.ssh_to_vm(@config.profile_name, ssh_options: @config.ssh_options)
-    when 'create'
-      sistero.create_vm(@config.profile_name)
-    when 'destroy'
-      sistero.destroy_vm(@config.profile_name)
-    when 'list'
-      sistero.list_vms()
-    when 'show-config'
-      sistero.show_config()
+    vm_name = @config.vm_name
+
+    begin
+      sistero = Sistero::Instance.new
+      case @config.action
+      when 'ssh'
+        sistero.ssh_to_vm(vm_name, ssh_options: @config.ssh_options)
+      when 'create'
+        sistero.create_vm(vm_name)
+      when 'destroy'
+        sistero.destroy_vm(vm_name)
+      when 'list'
+        sistero.list_vms()
+      when 'show-config'
+        sistero.show_config()
+      end
+    rescue RuntimeError => e
+      puts e.to_s
     end
   end
 end
