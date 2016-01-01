@@ -40,5 +40,5 @@ sistero create
 
 Or to create a VM called `london-vm` in london:
 ```
-sistero create london
+sistero create london-vm
 ```
