@@ -2,23 +2,15 @@
 
 require 'bundler/setup'
 require 'sistero'
-require 'optparse/subcommand'
 
 module Sistero::Command
   @config = OpenStruct.new
-  @config.profile_name = 'default'
 
-  @subcommands = []
+  @subcommands = {}
   @op = nil
 
-  def self.subcommand name, banner
-    @subcommands.push({ name: name, banner: banner })
-    @op.subcommand name do |subop|
-      @config.action = name
-      subop.banner = banner
-      with_help subop
-      yield subop if block_given?
-    end
+  def self.subcommand name, banner, &block
+    @subcommands[name] = { name: name, banner: banner, parse_cmdline: block }
   end
 
   def self.with_help help_op
@@ -28,26 +20,40 @@ module Sistero::Command
     end
   end
 
+  def self.parse_opts op
+    op.order!
+
+    action = ARGV[0]
+    subcmd_meta = @subcommands[action]
+    raise "invalid subcommand #{action}" unless @subcommands.has_key? action
+    ARGV.shift
+
+    @config.action = action
+    OptionParser.new do |subop|
+      subop.banner = subcmd_meta[:banner]
+      with_help subop
+      parse_cmdline = subcmd_meta[:parse_cmdline]
+      parse_cmdline.call(subop) if parse_cmdline
+    end.order!
+    @config.action_arg = ARGV[0]
+  end
+
   def self.run
     OptionParser.new do |op|
       @op = op
 
       op.banner = 'usage: sistero [global options] command [command options]'
       op.on '-h', '--help', 'show this help message' do
-        max_len = @subcommands.map { |subcommand| subcommand[:name].length }.max
+        max_len = @subcommands.values.map { |subcommand| subcommand[:name].length }.max
 
         puts op
         puts "\ncommands:"
-        @subcommands.each do |subcommand|
+        @subcommands.values.each do |subcommand|
           prefix = subcommand[:name]
           prefix += ' ' * (max_len - prefix.length + 2)
           puts "    #{prefix}  #{subcommand[:banner]}"
         end
         exit
-      end
-
-      op.on '-n vm-name', '--name', 'set vm name' do |vm_name|
-        @config.vm_name = vm_name
       end
 
       subcommand 'ssh', 'ssh to vm' do |subop|
@@ -64,7 +70,7 @@ module Sistero::Command
 
       subcommand 'show-config', 'show configuration'
 
-      op.parse!
+      parse_opts op
     end
 
     unless @config.action
@@ -72,7 +78,7 @@ module Sistero::Command
       exit
     end
 
-    vm_name = @config.vm_name
+    vm_name = @config.action_arg
 
     begin
       sistero = Sistero::Instance.new

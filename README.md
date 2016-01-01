@@ -38,7 +38,7 @@ Then to create a VM in new york called default-vm:
 sistero create
 ```
 
-Or to create a VM called london-vm in london:
+Or to create a VM called `london-vm` in london:
 ```
-sistero -n london create
+sistero create london
 ```
