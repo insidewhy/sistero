@@ -62,6 +62,8 @@ module Sistero::Command
 
       subcommand 'list', 'list vms'
 
+      subcommand 'show-config', 'show configuration'
+
       op.parse!
     end
 
@@ -80,6 +82,8 @@ module Sistero::Command
       sistero.destroy_vm(@config.profile_name)
     when 'list'
       sistero.list_vms()
+    when 'show-config'
+      sistero.show_config()
     end
   end
 end

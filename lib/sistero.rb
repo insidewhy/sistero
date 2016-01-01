@@ -5,7 +5,20 @@ require "droplet_kit"
 APP_NAME = "sistero"
 
 module Sistero
-  Profile = Struct.new(:access_token, :ssh_keys, :ssh_options, :vm_name, :vm_size, :vm_region, :vm_image)
+  PROFILE_KEYS = [:vm_name, :vm_size, :vm_region, :vm_image, :access_token, :ssh_keys, :ssh_options]
+
+  Profile = Struct.new(*PROFILE_KEYS) do
+    def to_s
+      PROFILE_KEYS.map do |key|
+        val = self[key]
+        if val
+          "#{key} #{val}\n"
+        else
+          ""
+        end
+      end.join
+    end
+  end
   # DEFAULTS = {
   #   :access_token => nil,
   #   :ssh_keys => [],
@@ -17,7 +30,7 @@ module Sistero
   # }
 
   class Config
-    attr_accessor :defaults
+    attr_accessor :defaults, :profiles
 
     def profile name
       @profiles[name] || @defaults
@@ -41,6 +54,10 @@ module Sistero
           profile[key] = value
         end
       end
+    end
+
+    def to_s
+      @profiles.values.map(&:to_s).join "\n"
     end
   end
 
@@ -133,6 +150,10 @@ module Sistero
       else
         puts "vm #{vm_name} not found"
       end
+    end
+
+    def show_config
+      puts @config.to_s
     end
   end
 end
