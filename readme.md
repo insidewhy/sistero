@@ -11,7 +11,6 @@ sistero is a profile based tool to manage a digital ocean cluster.
 Create a config file at `.config/sistero` with something like:
 
 ```
----
 defaults:
   vm_name: default-vm
   ssh_keys:
