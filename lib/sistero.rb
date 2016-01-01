@@ -9,10 +9,10 @@ module Sistero
 
   Profile = Struct.new(*PROFILE_KEYS) do
     def to_s
-      PROFILE_KEYS.map do |key|
+      "vm #{vm_name}\n" + PROFILE_KEYS.map do |key|
         val = self[key]
-        if val
-          "#{key} #{val}\n"
+        if val and key != :vm_name
+          "  #{key} #{val}\n"
         else
           ""
         end
@@ -97,7 +97,7 @@ module Sistero
         ssh_keys: profile.ssh_keys
       )
       vm = @client.droplets.create(vm)
-      puts "created vm: #{profile.to_s}"
+      puts "created: #{profile.to_s}"
       vm
     end
 
