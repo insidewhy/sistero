@@ -19,15 +19,6 @@ module Sistero
       end.join
     end
   end
-  # DEFAULTS = {
-  #   :access_token => nil,
-  #   :ssh_keys => [],
-  #   :ssh_options => '',
-  #   :vm_name => nil,
-  #   :vm_size => 512,
-  #   :vm_region => 'nyc3',
-  #   :vm_image => 'ubuntu-14-04-x64',
-  # }
 
   class Config
     attr_accessor :defaults, :profiles
