@@ -113,5 +113,16 @@ module Sistero
         puts "  available  #{size.available}"
       end
     end
+
+    def show_regions
+      @client.regions.all().each do |region|
+        puts "region #{region.slug}" + (region.available ? '' : ' (unavailable)')
+        puts "  name       #{region.name}"
+        if region.available
+          puts "  sizes      #{region.sizes.join ', '}"
+          puts "  features   #{region.features.join ', '}"
+        end
+      end
+    end
   end
 end

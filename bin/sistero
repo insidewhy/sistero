@@ -75,6 +75,8 @@ module Sistero::Command
 
       subcommand 'sizes', 'show possible sizes'
 
+      subcommand 'regions', 'show possible regions'
+
       parse_opts op, args
     end
 
@@ -103,6 +105,8 @@ module Sistero::Command
       sistero.show_ssh_keys()
     when 'sizes'
       sistero.show_sizes()
+    when 'regions'
+      sistero.show_regions()
     end
   rescue RuntimeError => e
     puts e.to_s
