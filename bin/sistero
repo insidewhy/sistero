@@ -20,13 +20,15 @@ module Sistero::Command
     end
   end
 
-  def self.parse_opts op
-    op.order!
+  def self.parse_opts op, args
+    args = @config.args = args.clone
+    op.order! args
+    raise "must supply subcommand" if args.empty?
 
-    action = ARGV[0]
+    action = args.first
     subcmd_meta = @subcommands[action]
-    raise "invalid subcommand #{action}" unless @subcommands.has_key? action
-    ARGV.shift
+    raise "invalid subcommand: #{action}" unless @subcommands.has_key? action
+    args.shift
 
     @config.action = action
     OptionParser.new do |subop|
@@ -34,11 +36,10 @@ module Sistero::Command
       with_help subop
       parse_cmdline = subcmd_meta[:parse_cmdline]
       parse_cmdline.call(subop) if parse_cmdline
-    end.order!
-    @config.action_arg = ARGV[0]
+    end.order! args
   end
 
-  def self.run
+  def self.run args
     OptionParser.new do |op|
       @op = op
 
@@ -70,7 +71,7 @@ module Sistero::Command
 
       subcommand 'show-config', 'show configuration'
 
-      parse_opts op
+      parse_opts op, args
     end
 
     unless @config.action
@@ -78,26 +79,26 @@ module Sistero::Command
       exit
     end
 
-    vm_name = @config.action_arg
-
-    begin
-      sistero = Sistero::Instance.new
-      case @config.action
-      when 'ssh'
-        sistero.ssh_to_vm(vm_name, ssh_options: @config.ssh_options)
-      when 'create'
-        sistero.create_vm(vm_name)
-      when 'destroy'
-        sistero.destroy_vm(vm_name)
-      when 'list'
-        sistero.list_vms()
-      when 'show-config'
-        sistero.show_config()
-      end
-    rescue RuntimeError => e
-      puts e.to_s
+    sistero = Sistero::Instance.new
+    case @config.action
+    when 'ssh'
+      vm_name, *ssh_args = @config.args
+      # TODO: pass ssh_args
+      sistero.ssh_to_vm(vm_name, ssh_options: @config.ssh_options)
+    when 'create'
+      vms = @config.args.empty? ? [nil] : @config.args
+      vms.each { |vm_name| sistero.create_vm(vm_name) }
+    when 'destroy'
+      vms = @config.args.empty? ? [nil] : @config.args
+      vms.each { |vm_name| sistero.destroy_vm(vm_name) }
+    when 'list'
+      sistero.list_vms()
+    when 'show-config'
+      sistero.show_config()
     end
+  rescue RuntimeError => e
+    puts e.to_s
   end
 end
 
-Sistero::Command::run
+Sistero::Command::run ARGV.clone if __FILE__ == $0
