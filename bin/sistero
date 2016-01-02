@@ -77,6 +77,8 @@ module Sistero::Command
 
       subcommand 'regions', 'show possible regions'
 
+      subcommand 'images', 'show images'
+
       parse_opts op, args
     end
 
@@ -107,6 +109,8 @@ module Sistero::Command
       sistero.show_sizes()
     when 'regions'
       sistero.show_regions()
+    when 'images'
+      sistero.show_images()
     end
   rescue RuntimeError => e
     puts e.to_s

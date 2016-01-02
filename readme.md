@@ -32,11 +32,9 @@ profiles:
 
 Any values not specified in a profile are taken from `defaults`. If the `defaults` entry specifies a `vm_name` then it becomes the default VM for the `create`, `ssh` and `destroy` commands.
 
-The `ssh_keys` is a list of the ID numbers of your ssh keys, these can be found by running `sistero ssh-keys`.
+The `ssh_keys` is a list of ID numbers (rather than names) of ssh keys, these can be found by running `sistero ssh-keys`.
 
-The valid options for `region` can be found by running `sistero regions`.
-
-The valid options for `vm_size` can be found by running `sistero sizes`.
+The valid options for `region`, `vm_size` and `vm_image` can be found by running `sistero regions`, `sistero sizes` and `sistero images` respectively.
 
 ## Running
 

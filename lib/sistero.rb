@@ -124,5 +124,16 @@ module Sistero
         end
       end
     end
+
+    def show_images
+      @client.images.all().each do |image|
+        puts "image #{image.slug}"
+        puts "  name          #{image.name}"
+        puts "  distribution  #{image.distribution}"
+        puts "  public        #{image.public}"
+        puts "  type          #{image.type}"
+        puts "  regions       #{image.regions.join ', '}"
+      end
+    end
   end
 end
