@@ -6,9 +6,9 @@ sistero is a profile based tool to manage a digital ocean cluster.
 
 ```gem install sistero```
 
-## Usage
+## Configuration
 
-Create a config file at `.config/sistero` with something like:
+The configuration file lives at `.config/sistero`, an example looks like this:
 
 ```
 defaults:
@@ -30,9 +30,17 @@ profiles:
     vm_size: 1gb
 ```
 
-The `ssh_keys` is a list of the ID numbers of your ssh keys.
+Any values not specified in a profile are taken from `defaults`. If the `defaults` entry specifies a `vm_name` then it becomes the default VM for the `create`, `ssh` and `destroy` commands.
 
-Then to create a VM in new york called default-vm:
+The `ssh_keys` is a list of the ID numbers of your ssh keys, these can be found by running `sistero ssh-keys`.
+
+The valid options for `region` can be found by running `sistero regions`.
+
+The valid options for `vm_size` can be found by running `sistero sizes`.
+
+## Running
+
+Assuming the previous config file, to create a VM in new york called default-vm:
 ```
 sistero create
 ```
