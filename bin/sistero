@@ -57,6 +57,10 @@ module Sistero::Command
         exit
       end
 
+      op.on '-c', '--config file', 'override path to config file' do |cfg_file_path|
+        @config.cfg_file_path = cfg_file_path
+      end
+
       subcommand 'ssh', 'ssh to vm' do |subop|
         subop.on '-o val', 'add ssh options' do |ssh_options|
           @config.ssh_options = ssh_options
@@ -87,7 +91,7 @@ module Sistero::Command
       exit
     end
 
-    sistero = Sistero::Instance.new
+    sistero = Sistero::Instance.new({ cfg_file_path: @config.cfg_file_path })
     case @config.action
     when 'ssh'
       vm_name, *ssh_args = @config.args

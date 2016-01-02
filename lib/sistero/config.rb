@@ -35,7 +35,8 @@ module Sistero
 
     def initialize(opts = {})
       # read defaults from config file
-      cfg_file_path = "#{ENV['HOME']}/.config/#{APP_NAME}"
+      cfg_file_path = opts[:cfg_file_path] || "#{ENV['HOME']}/.config/#{APP_NAME}"
+
       @defaults = Profile.new
       @profiles = []
 
