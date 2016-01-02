@@ -105,5 +105,13 @@ module Sistero
         puts "#{key.name}: #{key.id}"
       end
     end
+
+    def show_sizes
+      @client.sizes.all().each do |size|
+        puts "size #{size.slug}"
+        puts "  regions    #{size.regions.join ', '}"
+        puts "  available  #{size.available}"
+      end
+    end
   end
 end
