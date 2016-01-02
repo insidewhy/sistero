@@ -71,6 +71,8 @@ module Sistero::Command
 
       subcommand 'show-config', 'show configuration'
 
+      subcommand 'ssh-keys', 'show ssh keys'
+
       parse_opts op, args
     end
 
@@ -95,6 +97,8 @@ module Sistero::Command
       sistero.list_vms()
     when 'show-config'
       sistero.show_config()
+    when 'ssh-keys'
+      sistero.show_ssh_keys()
     end
   rescue RuntimeError => e
     puts e.to_s

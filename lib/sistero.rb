@@ -99,5 +99,11 @@ module Sistero
     def show_config
       puts @config.to_s
     end
+
+    def show_ssh_keys
+      @client.ssh_keys.all().each do |key|
+        puts "#{key.name}: #{key.id}"
+      end
+    end
   end
 end

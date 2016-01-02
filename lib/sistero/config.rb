@@ -52,7 +52,7 @@ module Sistero
         profile
       end
 
-      @profiles.push(@defaults) if @defaults['vm_name']
+      @profiles.push(@defaults) if @defaults.vm_name
     end
 
     def to_s
