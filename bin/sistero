@@ -121,4 +121,4 @@ module Sistero::Command
   end
 end
 
-Sistero::Command::run ARGV.clone if __FILE__ == $0
+Sistero::Command::run ARGV.clone
