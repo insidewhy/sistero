@@ -2,97 +2,53 @@
 
 require 'bundler/setup'
 require 'sistero'
+require 'optparse-subcommand'
 
 module Sistero::Command
   @config = OpenStruct.new
 
-  @subcommands = {}
-  @op = nil
-
-  def self.subcommand name, banner, &block
-    @subcommands[name] = { name: name, banner: banner, parse_cmdline: block }
-  end
-
-  def self.with_help help_op
-    help_op.on '-h', '--help', 'show this help message' do
-      puts help_op
+  def self.with_help op
+    op.on_tail '-h', '--help', 'show this help message' do
+      puts op
       exit
     end
   end
 
-  def self.parse_opts op, args
-    args = @config.args = args.clone
-    op.order! args
-    raise "must supply subcommand" if args.empty?
-
-    action = args.first
-    subcmd_meta = @subcommands[action]
-    raise "invalid subcommand: #{action}" unless @subcommands.has_key? action
-    args.shift
-
-    @config.action = action
-    OptionParser.new do |subop|
-      subop.banner = subcmd_meta[:banner]
-      with_help subop
-      parse_cmdline = subcmd_meta[:parse_cmdline]
-      parse_cmdline.call(subop) if parse_cmdline
-    end.order! args
-  end
-
   def self.run args
-    OptionParser.new do |op|
-      @op = op
-
+    SubcommandOptionParser.new do |op|
       op.banner = 'usage: sistero [global options] command [command options]'
-      op.on '-h', '--help', 'show this help message' do
-        max_len = @subcommands.values.map { |subcommand| subcommand[:name].length }.max
-
-        puts op
-        puts "\ncommands:"
-        @subcommands.values.each do |subcommand|
-          prefix = subcommand[:name]
-          prefix += ' ' * (max_len - prefix.length + 2)
-          puts "    #{prefix}  #{subcommand[:banner]}"
-        end
-        exit
-      end
+      with_help op
 
       op.on '-c', '--config file', 'override path to config file' do |cfg_file_path|
         @config.cfg_file_path = cfg_file_path
       end
 
-      subcommand 'ssh', 'ssh to vm' do |subop|
+      op.subcommand 'ssh', 'ssh to vm' do |subop|
         subop.on '-o val', 'add ssh options' do |ssh_options|
           @config.ssh_options = ssh_options
         end
       end
 
-      subcommand 'create', 'create vm'
+      help = method(:with_help)
+      op.subcommand 'create', 'create vm', &help
+      op.subcommand 'destroy', 'destroy vm', &help
+      op.subcommand 'list', 'list vms', &help
+      op.subcommand 'show-config', 'show configuration', &help
+      op.subcommand 'ssh-keys', 'show ssh keys', &help
+      op.subcommand 'sizes', 'show possible sizes', &help
+      op.subcommand 'regions', 'show possible regions', &help
+      op.subcommand 'images', 'show images', &help
 
-      subcommand 'destroy', 'destroy vm'
-
-      subcommand 'list', 'list vms'
-
-      subcommand 'show-config', 'show configuration'
-
-      subcommand 'ssh-keys', 'show ssh keys'
-
-      subcommand 'sizes', 'show possible sizes'
-
-      subcommand 'regions', 'show possible regions'
-
-      subcommand 'images', 'show images'
-
-      parse_opts op, args
+      @config.cmd, @config.args = op.parse args
     end
 
-    unless @config.action
+    unless @config.cmd
       puts 'please supply a command, see --help'
       exit
     end
 
     sistero = Sistero::Instance.new({ cfg_file_path: @config.cfg_file_path })
-    case @config.action
+    case @config.cmd
     when 'ssh'
       vm_name, *ssh_args = @config.args
       # TODO: pass ssh_args
@@ -121,4 +77,4 @@ module Sistero::Command
   end
 end
 
-Sistero::Command::run ARGV.clone
+Sistero::Command::run ARGV
