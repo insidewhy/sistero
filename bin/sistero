@@ -5,59 +5,58 @@ require 'sistero'
 require 'optparse-subcommand'
 
 module Sistero::Command
-  @config = OpenStruct.new
-
-  def self.with_help op
-    op.on_tail '-h', '--help', 'show this help message' do
-      puts op
-      exit
-    end
-  end
-
   def self.run args
+    config = nil
+
     SubcommandOptionParser.new do |op|
       op.banner = 'usage: sistero [global options] command [command options]'
-      with_help op
 
-      op.on '-c', '--config file', 'override path to config file' do |cfg_file_path|
-        @config.cfg_file_path = cfg_file_path
-      end
-
-      op.subcommand 'ssh', 'ssh to vm' do |subop|
-        subop.on '-o val', 'add ssh options' do |ssh_options|
-          @config.ssh_options = ssh_options
+      op.for_all do |op|
+        op.on_tail '-h', '--help', 'show this help message' do
+          puts op
+          exit
         end
       end
 
-      help = method(:with_help)
-      op.subcommand 'create', 'create vm', &help
-      op.subcommand 'destroy', 'destroy vm', &help
-      op.subcommand 'list', 'list vms', &help
-      op.subcommand 'show-config', 'show configuration', &help
-      op.subcommand 'ssh-keys', 'show ssh keys', &help
-      op.subcommand 'sizes', 'show possible sizes', &help
-      op.subcommand 'regions', 'show possible regions', &help
-      op.subcommand 'images', 'show images', &help
+      op.on '-c', '--config file', 'override path to config file', 'cfg_file_path'
 
-      @config.cmd, @config.args = op.parse args
+      op.subcommand 'ssh', 'ssh to vm' do |subop|
+        subop.on '-o val', 'add ssh options', 'ssh_options'
+      end
+
+      op.subcommand 'create', 'create vm'
+      op.subcommand 'destroy', 'destroy vm'
+      op.subcommand 'list', 'list vms'
+      op.subcommand 'show-config', 'show configuration'
+      op.subcommand 'ssh-keys', 'show ssh keys'
+      op.subcommand 'sizes', 'show possible sizes'
+      op.subcommand 'regions', 'show possible regions'
+      op.subcommand 'images', 'show images'
+
+      parsed_cfg = op.parse args
+
+      parsed_cfg.merge! parsed_cfg[:config]
+      parsed_cfg.delete :config
+
+      config = OpenStruct.new parsed_cfg
     end
 
-    unless @config.cmd
+    unless config.cmd
       puts 'please supply a command, see --help'
       exit
     end
 
-    sistero = Sistero::Instance.new({ cfg_file_path: @config.cfg_file_path })
-    case @config.cmd
+    sistero = Sistero::Instance.new({ cfg_file_path: config.cfg_file_path })
+    case config.cmd
     when 'ssh'
-      vm_name, *ssh_args = @config.args
+      vm_name, *ssh_args = config.args
       # TODO: pass ssh_args
-      sistero.ssh_to_vm(vm_name, ssh_options: @config.ssh_options)
+      sistero.ssh_to_vm(vm_name, ssh_options: config.ssh_options)
     when 'create'
-      vms = @config.args.empty? ? [nil] : @config.args
+      vms = config.args.empty? ? [nil] : config.args
       vms.each { |vm_name| sistero.create_vm(vm_name) }
     when 'destroy'
-      vms = @config.args.empty? ? [nil] : @config.args
+      vms = config.args.empty? ? [nil] : config.args
       vms.each { |vm_name| sistero.destroy_vm(vm_name) }
     when 'list'
       sistero.list_vms()
