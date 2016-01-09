@@ -33,7 +33,7 @@ module Sistero::Command
       op.subcommand 'regions', 'show possible regions'
       op.subcommand 'images', 'show images'
 
-      parsed_cfg = op.parse args
+      parsed_cfg = op.parse(args).to_h
 
       parsed_cfg.merge! parsed_cfg[:config]
       parsed_cfg.delete :config
@@ -41,13 +41,13 @@ module Sistero::Command
       config = OpenStruct.new parsed_cfg
     end
 
-    unless config.cmd
+    unless config.command
       puts 'please supply a command, see --help'
       exit
     end
 
     sistero = Sistero::Instance.new({ cfg_file_path: config.cfg_file_path })
-    case config.cmd
+    case config.command
     when 'ssh'
       vm_name, *ssh_args = config.positionals
       # TODO: pass ssh_args

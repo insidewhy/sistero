@@ -31,5 +31,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec"
 
   spec.add_dependency "droplet_kit", "~> 1.3"
-  spec.add_dependency "moister", "~> 0.1"
+  spec.add_dependency "moister", "~> 0.2"
 end
