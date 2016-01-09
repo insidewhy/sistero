@@ -2,13 +2,13 @@
 
 require 'bundler/setup'
 require 'sistero'
-require 'optparse-subcommand'
+require 'moister'
 
 module Sistero::Command
   def self.run args
     config = nil
 
-    SubcommandOptionParser.new do |op|
+    Moister::SubcommandOptionParser.new do |op|
       op.banner = 'usage: sistero [global options] command [command options]'
 
       op.for_all do |op|
@@ -49,14 +49,14 @@ module Sistero::Command
     sistero = Sistero::Instance.new({ cfg_file_path: config.cfg_file_path })
     case config.cmd
     when 'ssh'
-      vm_name, *ssh_args = config.args
+      vm_name, *ssh_args = config.positionals
       # TODO: pass ssh_args
       sistero.ssh_to_vm(vm_name, ssh_options: config.ssh_options)
     when 'create'
-      vms = config.args.empty? ? [nil] : config.args
+      vms = config.positionals.empty? ? [nil] : config.positionals
       vms.each { |vm_name| sistero.create_vm(vm_name) }
     when 'destroy'
-      vms = config.args.empty? ? [nil] : config.args
+      vms = config.positionals.empty? ? [nil] : config.positionals
       vms.each { |vm_name| sistero.destroy_vm(vm_name) }
     when 'list'
       sistero.list_vms()
