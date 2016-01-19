@@ -7,6 +7,7 @@ require 'moister'
 module Sistero::Command
   def self.run args
     config = nil
+    command = nil
 
     Moister::SubcommandOptionParser.new do |op|
       op.banner = 'usage: sistero [global options] command [command options]'
@@ -20,12 +21,12 @@ module Sistero::Command
 
       op.on '-c', '--config file', 'override path to config file', 'cfg_file_path'
 
-      op.subcommand 'ssh', 'ssh to vm' do |subop|
+      op.subcommand 'ssh [vm]', 'ssh to vm' do |subop|
         subop.on '-o val', 'add ssh options', 'ssh_options'
       end
 
-      op.subcommand 'create', 'create vm'
-      op.subcommand 'destroy', 'destroy vm'
+      op.subcommand 'create [*vms]', 'create vm'
+      op.subcommand 'destroy [*vms]', 'destroy vm'
       op.subcommand 'list', 'list vms'
       op.subcommand 'show-config', 'show configuration'
       op.subcommand 'ssh-keys', 'show ssh keys'
@@ -33,31 +34,31 @@ module Sistero::Command
       op.subcommand 'regions', 'show possible regions'
       op.subcommand 'images', 'show images'
 
-      parsed_cfg = op.parse(args).to_h
-
-      parsed_cfg.merge! parsed_cfg[:config]
-      parsed_cfg.delete :config
-
-      config = OpenStruct.new parsed_cfg
+      parsed_cfg = op.parse args
+      command = parsed_cfg[:command]
+      config = OpenStruct.new parsed_cfg[:config]
     end
 
-    unless config.command
+    unless command
       puts 'please supply a command, see --help'
       exit
     end
 
+    command_cfg = OpenStruct.new config[command]
     sistero = Sistero::Instance.new({ cfg_file_path: config.cfg_file_path })
-    case config.command
+
+    case command
     when 'ssh'
-      vm_name, *ssh_args = config.positionals
       # TODO: pass ssh_args
-      sistero.ssh_to_vm(vm_name, ssh_options: config.ssh_options)
+      sistero.ssh_to_vm(command_cfg.vm_name, ssh_options: command_cfg.ssh_options)
     when 'create'
-      vms = config.positionals.empty? ? [nil] : config.positionals
-      vms.each { |vm_name| sistero.create_vm(vm_name) }
+      vms = command_cfg.vms
+      vms.push nil if vms.empty?
+      vms.each &sistero.method(:create_vm)
     when 'destroy'
-      vms = config.positionals.empty? ? [nil] : config.positionals
-      vms.each { |vm_name| sistero.destroy_vm(vm_name) }
+      vms = command_cfg.vms
+      vms.push nil if vms.empty?
+      vms.each &sistero.method(:destroy_vm)
     when 'list'
       sistero.list_vms()
     when 'show-config'
