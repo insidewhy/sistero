@@ -50,7 +50,7 @@ module Sistero::Command
     case command
     when 'ssh'
       # TODO: pass ssh_args
-      sistero.ssh_to_vm(command_cfg.vm_name, ssh_options: command_cfg.ssh_options)
+      sistero.ssh_to_vm(command_cfg.vm, ssh_options: command_cfg.ssh_options)
     when 'create'
       vms = command_cfg.vms
       vms.push nil if vms.empty?
