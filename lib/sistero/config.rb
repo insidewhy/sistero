@@ -35,12 +35,18 @@ module Sistero
 
     def initialize(opts = {})
       # read defaults from config file
-      cfg_file_path = opts[:cfg_file_path] || "#{ENV['HOME']}/.config/#{APP_NAME}"
+      cfg_file_path = opts[:cfg_file_path]
+      unless cfg_file_path
+        cfg_file_path = 'sistero.yaml'
+        cfg_file_path = "#{ENV['HOME']}/.config/#{APP_NAME}" unless File.exists? cfg_file_path
+      end
 
       @defaults = Profile.new
       @profiles = []
 
       cfg = YAML.load_file cfg_file_path
+      postprocess_cfg cfg
+
       cfg['defaults'].each do |key, value|
         @defaults[key] = value
       end
@@ -58,6 +64,21 @@ module Sistero
 
     def to_s
       @profiles.map(&:to_s).join "\n"
+    end
+
+    private
+    def postprocess_cfg config
+      if config.is_a? Array
+        config.map &method(:postprocess_cfg)
+      elsif config.is_a? Hash
+        if config.length == 1 and config.has_key? 'file'
+          File.read(config['file']).strip
+        else
+          config.update(config) { |key, val| postprocess_cfg val }
+        end
+      else
+        config
+      end
     end
   end
 end
