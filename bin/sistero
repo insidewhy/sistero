@@ -26,6 +26,7 @@ module Sistero::Command
       end
 
       op.subcommand 'create [*vms]', 'create vm'
+      op.subcommand 'create-all', 'create all vms in profile'
       op.subcommand 'destroy [*vms]', 'destroy vm'
       op.subcommand 'list', 'list vms'
       op.subcommand 'show-config', 'show configuration'
@@ -55,6 +56,8 @@ module Sistero::Command
       vms = command_cfg.vms
       vms.push nil if vms.empty?
       vms.each &sistero.method(:create_vm)
+    when 'create-all'
+      sistero.create_all()
     when 'destroy'
       vms = command_cfg.vms
       vms.push nil if vms.empty?

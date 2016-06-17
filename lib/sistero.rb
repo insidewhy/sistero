@@ -41,6 +41,12 @@ module Sistero
       vm
     end
 
+    def create_all
+      @config.profiles.each do |profile|
+        create_vm profile.vm_name
+      end
+    end
+
     def is_port_open?(ip, port)
       begin
         Timeout::timeout(1) do
