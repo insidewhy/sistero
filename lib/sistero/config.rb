@@ -2,7 +2,8 @@ require "yaml"
 APP_NAME = "sistero"
 
 module Sistero
-  PROFILE_KEYS = [:vm_name, :vm_size, :vm_region, :vm_image, :access_token, :ssh_keys, :ssh_options]
+  PROFILE_KEYS = [:vm_name, :vm_size, :vm_region, :vm_image, :access_token, :ssh_user,
+                  :ssh_keys, :ssh_options, :user_data, :private_networking]
 
   Profile = Struct.new(*PROFILE_KEYS) do
     def to_s

@@ -34,7 +34,9 @@ module Sistero
         region: profile.vm_region,
         size: profile.vm_size,
         image: profile.vm_image,
-        ssh_keys: profile.ssh_keys
+        ssh_keys: profile.ssh_keys,
+        user_data: profile.user_data,
+        private_networking: profile.private_networking
       )
       vm = @client.droplets.create(vm)
       puts "created: #{profile.to_s}"
@@ -85,7 +87,7 @@ module Sistero
         end
       end
 
-      cmd = "ssh -o 'StrictHostKeyChecking no' #{ssh_options} root@#{ip}"
+      cmd = "ssh -o 'StrictHostKeyChecking no' #{ssh_options} #{profile.ssh_user || 'root'}@#{ip}"
       puts cmd
       exec cmd
     end
