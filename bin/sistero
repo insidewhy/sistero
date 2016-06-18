@@ -28,6 +28,8 @@ module Sistero::Command
         subop.on '-o val', 'add ssh options', 'ssh_options'
       end
 
+      op.subcommand 'rsync vm *cmd', 'rsync files to vm'
+
       op.subcommand 'create [*vms]', 'create vm'
       op.subcommand 'create-all', 'create all vms in config'
       op.subcommand 'destroy [*vms]', 'destroy vm'
@@ -56,8 +58,9 @@ module Sistero::Command
 
     case command
     when 'ssh'
-      # TODO: pass ssh_args
       sistero.ssh_to_vm(command_cfg.vm, ssh_options: command_cfg.ssh_options, run: command_cfg.run)
+    when 'rsync'
+      sistero.rsync(command_cfg.vm, cmd: command_cfg.cmd)
     when 'create'
       vms = command_cfg.vms
       vms.push nil if vms.empty?

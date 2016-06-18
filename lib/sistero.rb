@@ -70,22 +70,8 @@ module Sistero
       ssh_options ||= vm.ssh_options
 
       droplet = find_droplet(name) || create_droplet_from_vm(name)
-      public_network = droplet.networks.v4.find { |network| network.type == 'public' }
-      until public_network
-        puts "no public interfaces, trying again in a second"
-        sleep 1
-        droplet = find_droplet(name)
-        public_network = droplet.networks.v4.find { |network| network.type == 'public' }
-      end
-      ip = public_network.ip_address
-
-      unless is_port_open? ip, 22
-        puts "waiting for ssh port to open"
-        sleep 1
-        until is_port_open? ip, 22 do
-          sleep 1
-        end
-      end
+      public_network = get_public_network name, droplet
+      ip = wait_for_ssh_port public_network
 
       cmd = "ssh -o 'StrictHostKeyChecking no' #{ssh_options} #{vm.ssh_user || 'root'}@#{ip}"
       unless run.empty?
@@ -94,6 +80,16 @@ module Sistero
 
       # puts cmd
       exec cmd
+    end
+
+    def rsync(name, cmd: nil)
+      vm, name = get_vm name
+      droplet = find_droplet(name) || create_droplet_from_vm(name)
+      public_network = get_public_network name, droplet
+      ip = wait_for_ssh_port public_network
+
+      cmd_str = 'rsync ' + cmd.join(' ').gsub('vm:', "#{vm.ssh_user || 'root'}@#{ip}:")
+      exec cmd_str
     end
 
     def destroy_vm(name)
@@ -146,6 +142,30 @@ module Sistero
         puts "  type          #{image.type}"
         puts "  regions       #{image.regions.join ', '}"
       end
+    end
+
+    private
+    def get_public_network name, droplet
+      public_network = droplet.networks.v4.find { |network| network.type == 'public' }
+      until public_network
+        puts "no public interfaces, trying again in a second"
+        sleep 1
+        droplet = find_droplet(name)
+        public_network = droplet.networks.v4.find { |network| network.type == 'public' }
+      end
+      public_network
+    end
+
+    def wait_for_ssh_port public_network
+      ip = public_network.ip_address
+      unless is_port_open? ip, 22
+        puts "waiting for ssh port to open"
+        sleep 1
+        until is_port_open? ip, 22 do
+          sleep 1
+        end
+      end
+      ip
     end
   end
 end
