@@ -46,7 +46,7 @@ module Sistero
             @cfg_file_path = cfg_file_path
             break
           end
-          directory = File.dirname directory
+          directory = File.expand_path '..', directory
           break if directory == '/'
         end
 
