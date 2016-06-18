@@ -28,7 +28,7 @@ module Sistero::Command
         subop.on '-o val', 'add ssh options', 'ssh_options'
       end
 
-      op.subcommand 'rsync vm *cmd', 'rsync files to vm'
+      op.subcommand 'rsync vm *cmd', 'rsync files to/from vm'
 
       op.subcommand 'create [*vms]', 'create vm'
       op.subcommand 'create-all', 'create all vms in config'
