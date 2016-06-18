@@ -9,8 +9,8 @@ module Sistero
       @client = DropletKit::Client.new(access_token: @config.defaults.access_token)
     end
 
-    def find_vm(vm_name)
-      @client.droplets.all.find { |vm| vm.name == vm_name }
+    def find_droplet(name)
+      @client.droplets.all.find { |vm| vm.name == name }
     end
 
     def list_vms()
@@ -19,33 +19,33 @@ module Sistero
       end
     end
 
-    def get_profile vm_name
-      profile = @config.profile vm_name
-      vm_name = profile.vm_name if vm_name.nil?
-      [ profile, vm_name ]
+    def get_vm name
+      vm = @config.vm name
+      name = vm.name if name.nil?
+      [ vm, name ]
     end
 
-    def create_vm(vm_name)
-      profile, vm_name = get_profile vm_name
-      puts "creating vm: #{vm_name}"
+    def create_droplet_from_vm(name)
+      vm, name = get_vm name
+      puts "creating vm: #{name}"
 
-      vm = DropletKit::Droplet.new(
-        name: vm_name,
-        region: profile.vm_region,
-        size: profile.vm_size,
-        image: profile.vm_image,
-        ssh_keys: profile.ssh_keys,
-        user_data: profile.user_data,
-        private_networking: profile.private_networking
+      droplet = DropletKit::Droplet.new(
+        name: name,
+        region: vm.region,
+        size: vm.size,
+        image: vm.image,
+        ssh_keys: vm.ssh_keys,
+        user_data: vm.user_data,
+        private_networking: vm.private_networking
       )
-      vm = @client.droplets.create(vm)
-      puts "created: #{profile.to_s}"
-      vm
+      droplet = @client.droplets.create(droplet)
+      puts "created: #{vm.to_s}"
+      droplet
     end
 
     def create_all
-      @config.profiles.each do |profile|
-        create_vm profile.vm_name
+      @config.vms.each do |vm|
+        create_droplet_from_vm vm.name
       end
     end
 
@@ -65,17 +65,17 @@ module Sistero
       return false
     end
 
-    def ssh_to_vm(vm_name, ssh_options: nil)
-      profile, vm_name = get_profile vm_name
-      ssh_options ||= profile.ssh_options
+    def ssh_to_vm(name, ssh_options: nil)
+      vm, name = get_vm name
+      ssh_options ||= vm.ssh_options
 
-      vm = find_vm(vm_name) || create_vm(vm_name)
-      public_network = vm.networks.v4.find { |network| network.type == 'public' }
+      droplet = find_droplet(name) || create_droplet_from_vm(name)
+      public_network = droplet.networks.v4.find { |network| network.type == 'public' }
       until public_network
         puts "no public interfaces, trying again in a second"
         sleep 1
-        vm = find_vm(vm_name)
-        public_network = vm.networks.v4.find { |network| network.type == 'public' }
+        droplet = find_droplet(name)
+        public_network = droplet.networks.v4.find { |network| network.type == 'public' }
       end
       ip = public_network.ip_address
 
@@ -87,20 +87,20 @@ module Sistero
         end
       end
 
-      cmd = "ssh -o 'StrictHostKeyChecking no' #{ssh_options} #{profile.ssh_user || 'root'}@#{ip}"
+      cmd = "ssh -o 'StrictHostKeyChecking no' #{ssh_options} #{vm.ssh_user || 'root'}@#{ip}"
       puts cmd
       exec cmd
     end
 
-    def destroy_vm(vm_name)
-      profile, vm_name = get_profile vm_name
+    def destroy_vm(name)
+      vm, name = get_vm name
 
-      vm = find_vm(vm_name)
-      if vm
-        puts "destroying #{vm.id}"
-        @client.droplets.delete(id: vm.id)
+      droplet = find_droplet(name)
+      if droplet
+        puts "destroying #{droplet.id}"
+        @client.droplets.delete(id: droplet.id)
       else
-        puts "vm #{vm_name} not found"
+        puts "vm #{name} not found"
       end
     end
 

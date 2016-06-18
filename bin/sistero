@@ -26,7 +26,7 @@ module Sistero::Command
       end
 
       op.subcommand 'create [*vms]', 'create vm'
-      op.subcommand 'create-all', 'create all vms in profile'
+      op.subcommand 'create-all', 'create all vms in config'
       op.subcommand 'destroy [*vms]', 'destroy vm'
       op.subcommand 'list', 'list vms'
       op.subcommand 'show-config', 'show configuration'

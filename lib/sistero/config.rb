@@ -2,14 +2,14 @@ require "yaml"
 APP_NAME = "sistero"
 
 module Sistero
-  PROFILE_KEYS = [:vm_name, :vm_size, :vm_region, :vm_image, :access_token, :ssh_user,
-                  :ssh_keys, :ssh_options, :user_data, :private_networking]
+  VM_KEYS = [:name, :size, :region, :image, :access_token, :user_data, :private_networking,
+             :ssh_keys, :ssh_options, :ssh_user ]
 
-  Profile = Struct.new(*PROFILE_KEYS) do
+  VM = Struct.new(*VM_KEYS) do
     def to_s
-      "vm #{vm_name}\n" + PROFILE_KEYS.map do |key|
+      "vm #{name}\n" + VM_KEYS.map do |key|
         val = self[key]
-        if val and key != :vm_name
+        if val and key != :name
           "  #{key} #{val}\n"
         else
           ""
@@ -19,17 +19,17 @@ module Sistero
   end
 
   class Config
-    attr_accessor :defaults, :profiles
+    attr_accessor :defaults, :vms
 
-    def profile vm_name
-      vm_name ||= @defaults['vm_name']
-      raise "must set a default vm_name or specify one" unless vm_name
+    def vm name
+      name ||= @defaults['name']
+      raise "must set a default name or specify one" unless name
       # TODO: also handle wildcards
-      profile = @profiles.find do |profile|
-        profile.vm_name == vm_name
+      vm = @vms.find do |vm|
+        vm.name == name
       end
-      raise "could not find profile for #{vm_name}" unless profile
-      profile
+      raise "could not find vm for #{name}" unless vm
+      vm
     end
 
     def initialize(opts = {})
@@ -40,8 +40,8 @@ module Sistero
         @cfg_file_path = "#{ENV['HOME']}/.config/#{APP_NAME}" unless File.exists? @cfg_file_path
       end
 
-      @defaults = Profile.new
-      @profiles = []
+      @defaults = VM.new
+      @vms = []
 
       cfg = YAML.load_file @cfg_file_path
       postprocess_cfg cfg
@@ -50,30 +50,30 @@ module Sistero
         @defaults[key] = value
       end
 
-      @profiles = cfg['profiles'].map do |profile_cfg|
-        profile = Profile.new *@defaults
-        profile.vm_name = nil
+      @vms = cfg['vms'].map do |vm_cfg|
+        vm = VM.new *@defaults
+        vm.name = nil
 
-        profile_cfg.each do |key, value|
-          profile[key] = value
+        vm_cfg.each do |key, value|
+          vm[key] = value
         end
-        unless profile.user_data.nil?
-          user_data = profile.user_data.dup
-          PROFILE_KEYS.each do |key|
-            value = profile[key]
+        unless vm.user_data.nil?
+          user_data = vm.user_data.dup
+          VM_KEYS.each do |key|
+            value = vm[key]
             if value.is_a? String
               user_data.gsub! "\#{#{key}}", value
             end
           end
-          profile.user_data = user_data
+          vm.user_data = user_data
         end
-        raise "every profile must have a vm_name field" unless profile.vm_name
-        profile
+        raise "every vm must have a name field" unless vm.name
+        vm
       end
     end
 
     def to_s
-      @profiles.map(&:to_s).join "\n"
+      @vms.map(&:to_s).join "\n"
     end
 
     private
