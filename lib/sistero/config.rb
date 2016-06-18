@@ -57,6 +57,16 @@ module Sistero
         profile_cfg.each do |key, value|
           profile[key] = value
         end
+        user_data = profile.user_data.dup
+        if user_data
+          PROFILE_KEYS.each do |key|
+            value = profile[key]
+            if value.is_a? String
+              user_data.gsub! "\#{#{key}}", value
+            end
+          end
+          profile.user_data = user_data
+        end
         profile
       end
 
