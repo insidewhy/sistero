@@ -57,8 +57,8 @@ module Sistero
         profile_cfg.each do |key, value|
           profile[key] = value
         end
-        user_data = profile.user_data.dup
-        if user_data
+        unless profile.user_data.nil?
+          user_data = profile.user_data.dup
           PROFILE_KEYS.each do |key|
             value = profile[key]
             if value.is_a? String
