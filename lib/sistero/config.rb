@@ -1,7 +1,9 @@
 require "yaml"
-APP_NAME = "sistero"
 
 module Sistero
+  CONFIG_FILE_NAME = 'sistero.yaml'
+  APP_NAME = "sistero"
+
   VM_KEYS = [:name, :size, :region, :image, :access_token, :user_data, :private_networking,
              :ssh_keys, :ssh_options, :ssh_user ]
 
@@ -36,8 +38,19 @@ module Sistero
       # read defaults from config file
       @cfg_file_path = opts[:cfg_file_path]
       unless @cfg_file_path
-        @cfg_file_path = 'sistero.yaml'
-        @cfg_file_path = "#{ENV['HOME']}/.config/#{APP_NAME}" unless File.exists? @cfg_file_path
+        directory = opts[:directory] || '.'
+
+        for n in 0..100
+          cfg_file_path = File.join(directory, CONFIG_FILE_NAME)
+          if File.exists? cfg_file_path
+            @cfg_file_path = cfg_file_path
+            break
+          end
+          directory = File.dirname directory
+          break if directory == '/'
+        end
+
+        @cfg_file_path ||= "#{ENV['HOME']}/.config/#{APP_NAME}"
       end
 
       @defaults = VM.new

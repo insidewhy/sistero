@@ -22,6 +22,7 @@ module Sistero::Command
       end
 
       op.on '-c', '--config file', 'override path to config file', 'cfg_file_path'
+      op.on '-d', '--directory dir', 'set working dir', 'directory'
 
       op.subcommand 'ssh [vm]', 'ssh to vm' do |subop|
         subop.on '-o val', 'add ssh options', 'ssh_options'
@@ -48,7 +49,10 @@ module Sistero::Command
     end
 
     command_cfg = OpenStruct.new config[command]
-    sistero = Sistero::Instance.new({ cfg_file_path: config.cfg_file_path })
+    sistero = Sistero::Instance.new({
+      cfg_file_path: config.cfg_file_path,
+      directory: config.directory
+    })
 
     case command
     when 'ssh'
