@@ -65,7 +65,7 @@ module Sistero
       return false
     end
 
-    def ssh_to_vm(name, ssh_options: nil)
+    def ssh_to_vm(name, ssh_options: nil, run: nil)
       vm, name = get_vm name
       ssh_options ||= vm.ssh_options
 
@@ -88,7 +88,11 @@ module Sistero
       end
 
       cmd = "ssh -o 'StrictHostKeyChecking no' #{ssh_options} #{vm.ssh_user || 'root'}@#{ip}"
-      puts cmd
+      unless run.empty?
+        cmd += ' ' + run.join(' ')
+      end
+
+      # puts cmd
       exec cmd
     end
 

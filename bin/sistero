@@ -24,7 +24,7 @@ module Sistero::Command
       op.on '-c', '--config file', 'override path to config file', 'cfg_file_path'
       op.on '-d', '--directory dir', 'set working dir', 'directory'
 
-      op.subcommand 'ssh [vm]', 'ssh to vm' do |subop|
+      op.subcommand 'ssh [vm] [*run]', 'ssh to vm' do |subop|
         subop.on '-o val', 'add ssh options', 'ssh_options'
       end
 
@@ -57,7 +57,7 @@ module Sistero::Command
     case command
     when 'ssh'
       # TODO: pass ssh_args
-      sistero.ssh_to_vm(command_cfg.vm, ssh_options: command_cfg.ssh_options)
+      sistero.ssh_to_vm(command_cfg.vm, ssh_options: command_cfg.ssh_options, run: command_cfg.run)
     when 'create'
       vms = command_cfg.vms
       vms.push nil if vms.empty?
