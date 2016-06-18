@@ -22,15 +22,13 @@ module Sistero
     attr_accessor :defaults, :profiles
 
     def profile vm_name
-      if @defaults['vm_name'] and vm_name.nil?
-        profile = @defaults
-      else
-        # TODO: also handle wildcards
-        profile = @profiles.find do |profile|
-          profile.vm_name == vm_name
-        end
-        raise "could not find profile for #{vm_name}" unless profile
+      vm_name ||= @defaults['vm_name']
+      raise "must set a default vm_name or specify one" unless vm_name
+      # TODO: also handle wildcards
+      profile = @profiles.find do |profile|
+        profile.vm_name == vm_name
       end
+      raise "could not find profile for #{vm_name}" unless profile
       profile
     end
 
@@ -54,6 +52,8 @@ module Sistero
 
       @profiles = cfg['profiles'].map do |profile_cfg|
         profile = Profile.new *@defaults
+        profile.vm_name = nil
+
         profile_cfg.each do |key, value|
           profile[key] = value
         end
@@ -67,10 +67,9 @@ module Sistero
           end
           profile.user_data = user_data
         end
+        raise "every profile must have a vm_name field" unless profile.vm_name
         profile
       end
-
-      @profiles.push(@defaults) if @defaults.vm_name
     end
 
     def to_s
