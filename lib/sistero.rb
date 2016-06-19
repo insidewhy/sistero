@@ -10,12 +10,12 @@ module Sistero
     end
 
     def find_droplet(name)
-      @client.droplets.all.find { |vm| vm.name == name }
+      @client.droplets.all.find { |droplet| droplet.name == name }
     end
 
     def list_vms()
-      @client.droplets.all.each do |vm|
-        puts "#{vm.name} - #{vm.networks[0][0].ip_address}"
+      @client.droplets.all.each do |droplet|
+        puts "#{droplet.name} - #{get_public_ip droplet}"
       end
     end
 
@@ -70,10 +70,10 @@ module Sistero
       ssh_options ||= vm.ssh_options
 
       droplet = find_droplet(name) || create_droplet_from_vm(name)
-      public_network = get_public_network name, droplet
-      ip = wait_for_ssh_port public_network
+      public_ip = get_public_ip droplet
+      wait_for_ssh_port public_ip
 
-      cmd = "ssh -o 'StrictHostKeyChecking no' #{ssh_options} #{vm.ssh_user || 'root'}@#{ip}"
+      cmd = "ssh -o 'StrictHostKeyChecking no' #{ssh_options} #{vm.ssh_user || 'root'}@#{public_ip}"
       unless run.empty?
         cmd += ' ' + run.join(' ')
       end
@@ -85,10 +85,10 @@ module Sistero
     def rsync(name, cmd: nil)
       vm, name = get_vm name
       droplet = find_droplet(name) || create_droplet_from_vm(name)
-      public_network = get_public_network name, droplet
-      ip = wait_for_ssh_port public_network
+      public_ip = get_public_ip droplet
+      wait_for_ssh_port public_ip
 
-      cmd_str = 'rsync ' + cmd.join(' ').gsub('vm:', "#{vm.ssh_user || 'root'}@#{ip}:")
+      cmd_str = 'rsync ' + cmd.join(' ').gsub('vm:', "#{vm.ssh_user || 'root'}@#{public_ip}:")
       exec cmd_str
     end
 
@@ -145,27 +145,25 @@ module Sistero
     end
 
     private
-    def get_public_network name, droplet
+    def get_public_ip droplet
       public_network = droplet.networks.v4.find { |network| network.type == 'public' }
       until public_network
         puts "no public interfaces, trying again in a second"
         sleep 1
-        droplet = find_droplet(name)
+        droplet = find_droplet(droplet.name)
         public_network = droplet.networks.v4.find { |network| network.type == 'public' }
       end
-      public_network
+      public_network.ip_address
     end
 
-    def wait_for_ssh_port public_network
-      ip = public_network.ip_address
-      unless is_port_open? ip, 22
+    def wait_for_ssh_port public_ip
+      unless is_port_open? public_ip, 22
         puts "waiting for ssh port to open"
         sleep 1
-        until is_port_open? ip, 22 do
+        until is_port_open? public_ip, 22 do
           sleep 1
         end
       end
-      ip
     end
   end
 end
