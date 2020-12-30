@@ -64,7 +64,7 @@ module Sistero::Command
     when 'create'
       vms = command_cfg.vms
       vms.push nil if vms.empty?
-      vms.each &sistero.method(:create_vm)
+      vms.each &sistero.method(:create_droplet_from_vm)
     when 'create-all'
       sistero.create_all()
     when 'destroy'

@@ -145,13 +145,18 @@ module Sistero
     end
 
     private
+    def find_public_network droplet
+      droplet&.networks.v4.find { |network| network.type == 'public' }
+    end
+
+    private
     def get_public_ip droplet
-      public_network = droplet.networks.v4.find { |network| network.type == 'public' }
+      public_network = find_public_network droplet
       until public_network
         puts "no public interfaces, trying again in a second"
         sleep 1
         droplet = find_droplet(droplet.name)
-        public_network = droplet.networks.v4.find { |network| network.type == 'public' }
+        public_network = find_public_network droplet
       end
       public_network.ip_address
     end
