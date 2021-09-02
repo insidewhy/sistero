@@ -146,7 +146,7 @@ module Sistero
 
     private
     def find_public_network droplet
-      droplet&.networks.v4.find { |network| network.type == 'public' }
+      droplet&.networks&.v4.find { |network| network.type == 'public' }
     end
 
     private
